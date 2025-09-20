@@ -1,7 +1,5 @@
-const chatDiv = document.getElementById("chat");
-
 async function handleSend() {
-  const userInput = document.getElementById("userInput").value.trim();
+  const userInput = document.getElementById("userInput").value;
   if (!userInput) return;
 
   appendMessage("You", userInput, "user");
@@ -13,9 +11,6 @@ async function handleSend() {
     return;
   }
 
-  // Show typing indicator
-  const typingMsg = appendMessage("Syn AI", "⚡ Syn AI is typing...", "bot");
-
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -24,22 +19,33 @@ async function handleSend() {
     });
 
     const data = await response.json();
-
-    // Remove typing indicator
-    chatDiv.removeChild(typingMsg);
-
     appendMessage("Syn AI", data.reply || "⚠️ No response from Syn AI", "bot");
   } catch (err) {
-    chatDiv.removeChild(typingMsg);
     appendMessage("Syn AI", `Error: ${err.message}`, "bot");
   }
 }
 
 function appendMessage(sender, text, cls) {
-  const p = document.createElement("p");
-  p.className = cls;
-  p.textContent = `${sender}: ${text}`;
-  chatDiv.appendChild(p);
+  const chatDiv = document.getElementById("chat");
+  const messageWrapper = document.createElement("div");
+  messageWrapper.className = cls;
+
+  // ✅ Detect if reply looks like code block
+  if (text.includes("<") || text.includes("{") || text.includes(";")) {
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+    code.textContent = text; // keep it raw so browser doesn’t execute it
+    pre.appendChild(code);
+
+    messageWrapper.innerHTML = `<strong>${sender}:</strong>`;
+    messageWrapper.appendChild(pre);
+  } else {
+    // Normal text bubble
+    const p = document.createElement("p");
+    p.textContent = `${sender}: ${text}`;
+    messageWrapper.appendChild(p);
+  }
+
+  chatDiv.appendChild(messageWrapper);
   chatDiv.scrollTop = chatDiv.scrollHeight;
-  return p; // return the element for removal if needed
 }
