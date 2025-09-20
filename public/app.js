@@ -1,5 +1,7 @@
+const chatDiv = document.getElementById("chat");
+
 async function handleSend() {
-  const userInput = document.getElementById("userInput").value;
+  const userInput = document.getElementById("userInput").value.trim();
   if (!userInput) return;
 
   appendMessage("You", userInput, "user");
@@ -11,6 +13,9 @@ async function handleSend() {
     return;
   }
 
+  // Show typing indicator
+  const typingMsg = appendMessage("Syn AI", "⚡ Syn AI is typing...", "bot");
+
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -19,17 +24,22 @@ async function handleSend() {
     });
 
     const data = await response.json();
+
+    // Remove typing indicator
+    chatDiv.removeChild(typingMsg);
+
     appendMessage("Syn AI", data.reply || "⚠️ No response from Syn AI", "bot");
   } catch (err) {
+    chatDiv.removeChild(typingMsg);
     appendMessage("Syn AI", `Error: ${err.message}`, "bot");
   }
 }
 
 function appendMessage(sender, text, cls) {
-  const chatDiv = document.getElementById("chat");
   const p = document.createElement("p");
   p.className = cls;
   p.textContent = `${sender}: ${text}`;
   chatDiv.appendChild(p);
   chatDiv.scrollTop = chatDiv.scrollHeight;
+  return p; // return the element for removal if needed
 }
