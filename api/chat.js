@@ -1,5 +1,6 @@
 // api/chat.js
 export default async function handler(req, res) {
+  // Only accept POST requests
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -9,7 +10,11 @@ export default async function handler(req, res) {
 
   try {
     const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
+    if (!OPENROUTER_KEY) {
+      return res.status(500).json({ error: "OpenRouter API key not set in environment variables" });
+    }
 
+    // Call OpenRouter API
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -17,19 +22,21 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // choose your model
+        model: "gpt-4o-mini",       // choose your model
         messages: [{ role: "user", content: message }],
       }),
     });
 
+    // Handle API errors
     if (!response.ok) {
       const text = await response.text();
       return res.status(response.status).json({ error: `OpenRouter API error: ${text}` });
     }
 
     const data = await response.json();
-    const aiReply = data?.choices?.[0]?.message?.content || "No reply";
+    const aiReply = data?.choices?.[0]?.message?.content || "No reply from AI";
 
+    // Send AI response back to frontend
     return res.status(200).json({ reply: aiReply });
   } catch (err) {
     console.error("Server Error:", err);
