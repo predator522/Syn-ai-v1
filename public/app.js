@@ -1,41 +1,35 @@
+const chatDiv = document.getElementById("chat");
+const userInput = document.getElementById("userInput");
+
 async function handleSend() {
-  const input = document.getElementById("userInput");
-  const chat = document.getElementById("chat");
-  const selector = document.getElementById("apiSelector");
+  const message = userInput.value.trim();
+  if (!message) return;
 
-  const userMessage = input.value.trim();
-  if (!userMessage) return;
+  appendMessage("You", message, "user");
+  userInput.value = "";
 
-  // Show user message
-  const userDiv = document.createElement("div");
-  userDiv.className = "user";
-  userDiv.textContent = "You: " + userMessage;
-  chat.appendChild(userDiv);
-  chat.scrollTop = chat.scrollHeight;
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
 
-  input.value = "";
-
-  // Call selected AI
-  let botReply = "⚡ Offline AI not implemented yet.";
-  if (selector.value === "synai") {
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
-      });
-
-      const data = await res.json();
-      botReply = data.reply || data.error || "⚠️ No response from Syn AI";
-    } catch (err) {
-      botReply = "⚠️ Error: " + err.message;
+    const data = await res.json();
+    if (data.reply) {
+      appendMessage("Syn AI", data.reply, "bot");
+    } else if (data.error) {
+      appendMessage("Syn AI Error", data.error, "bot");
     }
+  } catch (err) {
+    appendMessage("Syn AI Error", err.message, "bot");
   }
+}
 
-  // Show AI reply
-  const botDiv = document.createElement("div");
-  botDiv.className = "bot";
-  botDiv.textContent = "Syn AI: " + botReply;
-  chat.appendChild(botDiv);
-  chat.scrollTop = chat.scrollHeight;
+function appendMessage(sender, text, className) {
+  const p = document.createElement("p");
+  p.className = className;
+  p.textContent = `${sender}: ${text}`;
+  chatDiv.appendChild(p);
+  chatDiv.scrollTop = chatDiv.scrollHeight;
 }
